@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: sample-ctr
-        image: chaitanyaveeksha/chaituthippu12345:latest
+        image: manoj3214/virat:latest
         ports:
         - containerPort: 8080
 ---
