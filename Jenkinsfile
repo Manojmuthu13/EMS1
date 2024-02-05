@@ -1,54 +1,41 @@
-pipeline {
+pipeline{
     agent any
-    
-    
-    tools {
-        jdk "java"
-        maven "maven"
+    tools{
+        maven "M2_HOME"
     }
-    stages {
-        stage('Fetch') {
-            steps {
-                // Get some code from a GitHub repository
-                git branch: 'main', url: 'https://github.com/Chaitanya2528/EMS1.git'
-            }
-        }
-         stage('sonarqube'){
+    stages{
+        stage("clone the code"){
             steps{
-                sh 'mvn clean sonar:sonar'
+                git branch: 'main', url: 'https://github.com/Manojmuthu13/EMS1.git'
             }
         }
-        stage('Automated Testing'){
-        steps{
-            script{
-                echo 'selenium test cases are passed'
-            }
-        }
-        }
-        stage('build'){
+        stage("maven build"){
             steps{
-                sh 'mvn clean package'
+                sh "mvn clean install"
             }
         }
-        stage('artifact'){
-             steps{
-               s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'baby234', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: false, selectedRegion: 'us-east-1', showDirectlyInBrowser: false, sourceFile: '**/*', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: 'baby234', userMetadata: []
-             }
-        }
-         stage("docker image"){
+        stage("code-checking-quality"){
             steps{
-                script {
-               withCredentials([usernamePassword(credentialsId: 'docker', passwordVariable: 'dockerbabypas', usernameVariable: 'docker')]) {
-                  sh 'docker login -u ${docker} -p ${dockerbabypas}'
-                   sh 'docker build -t ${docker}/chaituthippu12345:latest .'
-                   sh 'docker push ${docker}/chaituthippu12345:latest'
-                   sh 'docker run -d --name ems -p 9901:8080 ${docker}/chaituthippu12345:latest'
-                   
-            
+                sh "mvn sonar:sonar"
+            }
+        }
+        stage("Artifact-Upload"){
+            steps{
+                s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'bitbucket-restore-code', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: false, selectedRegion: 'ap-south-1', showDirectlyInBrowser: false, sourceFile: '**/*.war', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: 's3', userMetadata: []
+            }
+        }
+        stage("docker build image and push"){
+            steps{
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'dockerpasvar', usernameVariable: 'manoj3214')]) {
+                        sh 'docker login -u ${manoj3214} -p ${dockerpasvar}'
+                        sh 'docker build -t ${manoj3214}/virat:latest .'
+                        sh 'docker push ${manoj3214}/virat:latest'
+                        sh 'docker run -d --name dhoni -p 9999:8080 ${manoj3214}/virat:latest'
+                    }
                 }
-              }
-           }
-        }   
+            }
+        }
         stage("kubernetes deployment"){
             steps{
                 script{
@@ -59,6 +46,6 @@ pipeline {
                     
                 }
             }
-            }
+        }
     }
 }
